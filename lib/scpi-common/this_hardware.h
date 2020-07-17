@@ -5,6 +5,7 @@
 #include <Wire.h>
 #include <SPI.h>
 #include "SparkFunLSM9DS1.h"
+#include "BraccioV2.h"
 
 // Earth's magnetic field varies by location. Add or subtract
 // a declination to get a more accurate heading. Calculate
@@ -18,7 +19,12 @@
 #define PRINT_CALCULATED
 #define PRINT_RAW
 
+/// Definitions for the arm ///
+#define GRIPPER_CLOSED 73
+#define GRIPPER_OPENED 20
+
 /// defining IO pins for the teensy ///
+
 
 void run_stuff(void); //general dummy function for testing stuff.
 

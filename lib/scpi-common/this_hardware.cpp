@@ -9,6 +9,13 @@ LSM9DS1 imu[2];
 int imu_device0_connected = 0;
 int imu_device1_connected = 0;
 
+/// Braccio robotic arm ///
+Braccio arm;
+IntervalTimer arm_mover;
+
+// function definitions
+void update_arm(void);
+
 /* init_hardware
  *
  * initalises the hardware componenets of the microcontroller.
@@ -34,6 +41,29 @@ void init_hardware(void){
   if (imu[1].begin(IMU_DEVICE_1_AG_ADDR,IMU_DEVICE_1_M_ADDR,Wire) != 0) {
     imu_device1_connected = 1;
   }
+
+  //Update these lines with the calibration code outputted by the calibration program.
+  arm.setJointCenter(WRIST_ROT, 90);
+  arm.setJointCenter(WRIST, 90);
+  arm.setJointCenter(ELBOW, 90);
+  arm.setJointCenter(SHOULDER, 90);
+  arm.setJointCenter(BASE_ROT, 90);
+  arm.setJointCenter(GRIPPER, 50);//Rough center of gripper, default opening position
+
+  //Set max/min values for joints as needed. Default is min: 0, max: 180
+  //The only two joints that should need this set are gripper and shoulder.
+  arm.setJointMax(GRIPPER, 100);//Gripper closed, can go further, but risks damage to servos
+  arm.setJointMin(GRIPPER, 15);//Gripper open, can't open further
+
+  //There are two ways to start the arm:
+  //1. Start to default position.
+  arm.begin(true);// Start to default vertical position.
+
+  arm_mover.begin(update_arm,500);
+}
+
+void update_arm(void){
+  arm.update();
 }
 
 /* _is_imu_connected
@@ -162,7 +192,14 @@ float get_mag_z(int device_id){
 }
 
 void run_stuff(void) {
-   
+   if (digitalReadFast(13)){
+     digitalWriteFast(13,LOW);
+     arm.setOneAbsolute(GRIPPER, GRIPPER_OPENED);
+   }
+   else {
+     digitalWriteFast(13,HIGH);
+     arm.setOneAbsolute(GRIPPER, GRIPPER_CLOSED);
+   }
 
 }
 

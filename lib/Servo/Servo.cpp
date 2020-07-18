@@ -435,6 +435,18 @@ void Servo::write(int value)
 	servo_ticks[servoIndex] = map(value, 0, 180, min_ticks, max_ticks);
 }
 
+void Servo::writeFP(int value)
+{
+	if (servoIndex >= MAX_SERVOS) return;
+	if (value > 18000) {
+		value = 18000;
+	} else if (value < 0) {
+		value = 0;
+	}
+	if (servoIndex >= MAX_SERVOS) return;
+	servo_ticks[servoIndex] = map(value, 0, 18000, min_ticks, max_ticks);
+}
+
 void Servo::writeMicroseconds(int value)
 {
 	value = usToTicks(value);

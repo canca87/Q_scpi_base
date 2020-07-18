@@ -1,5 +1,20 @@
 #include "this_hardware.h"
 
+// Local function definitions
+void update_arm(void);
+void gripper_forward(void);
+void gripper_backward(void);
+void wrist_rotate_forward(void);
+void wrist_rotate_backward(void);
+void wrist_forward(void);
+void wrist_backward(void);
+void elbow_forward(void);
+void elbow_backward(void);
+void shoulder_forward(void);
+void shoulder_backward(void);
+void base_forward(void);
+void base_backward(void);
+
 //////////////////////////
 // LSM9DS1 Library Init //
 //////////////////////////
@@ -12,9 +27,12 @@ int imu_device1_connected = 0;
 /// Braccio robotic arm ///
 Braccio arm;
 IntervalTimer arm_mover;
-
-// function definitions
-void update_arm(void);
+AccelStepper gripper_stepper(gripper_forward,gripper_backward);
+AccelStepper wrist_rotate_stepper(wrist_rotate_forward,wrist_rotate_backward);
+AccelStepper wrist_stepper(wrist_forward,wrist_backward);
+AccelStepper elbow_stepper(elbow_forward,elbow_backward);
+AccelStepper shoulder_stepper(shoulder_forward,shoulder_backward);
+AccelStepper base_stepper(base_forward,base_backward);
 
 /* init_hardware
  *
@@ -43,27 +61,141 @@ void init_hardware(void){
   }
 
   //Update these lines with the calibration code outputted by the calibration program.
-  arm.setJointCenter(WRIST_ROT, 90);
-  arm.setJointCenter(WRIST, 90);
-  arm.setJointCenter(ELBOW, 90);
-  arm.setJointCenter(SHOULDER, 90);
-  arm.setJointCenter(BASE_ROT, 90);
-  arm.setJointCenter(GRIPPER, 50);//Rough center of gripper, default opening position
+  arm.setJointCenter(WRIST_ROT, 9300);
+  arm.setJointCenter(WRIST, 9300);
+  arm.setJointCenter(ELBOW, 8200);
+  arm.setJointCenter(SHOULDER, 9100);
+  arm.setJointCenter(BASE_ROT, 9000);
+  arm.setJointCenter(GRIPPER, 4000);//Rough center of gripper, default opening position
 
   //Set max/min values for joints as needed. Default is min: 0, max: 180
   //The only two joints that should need this set are gripper and shoulder.
-  arm.setJointMax(GRIPPER, 100);//Gripper closed, can go further, but risks damage to servos
-  arm.setJointMin(GRIPPER, 15);//Gripper open, can't open further
+  arm.setJointMax(GRIPPER, 7600);//Gripper closed, can go further, but risks damage to servos
+  arm.setJointMin(GRIPPER, 1500);//Gripper open, can't open further
+  arm.setJointMax(SHOULDER, 17300);// from calibration
+  arm.setJointMin(SHOULDER, 1500);// from calibration
 
   //There are two ways to start the arm:
   //1. Start to default position.
   arm.begin(true);// Start to default vertical position.
 
   arm_mover.begin(update_arm,500);
+  
+  gripper_stepper.setMaxSpeed(1000000);
+  gripper_stepper.setAcceleration(100000);
+  wrist_rotate_stepper.setMaxSpeed(10000);
+  wrist_rotate_stepper.setAcceleration(1000);
+  wrist_stepper.setMaxSpeed(10000);
+  wrist_stepper.setAcceleration(1000);
+  elbow_stepper.setMaxSpeed(10000);
+  elbow_stepper.setAcceleration(1000);
+  shoulder_stepper.setMaxSpeed(10000);
+  shoulder_stepper.setAcceleration(1000);
+  shoulder_stepper.setCurrentPosition(0);
+  base_stepper.setMaxSpeed(10000);
+  base_stepper.setAcceleration(1000);
 }
 
 void update_arm(void){
   arm.update();
+  gripper_stepper.run();
+  wrist_rotate_stepper.run();
+  wrist_stepper.run();
+  elbow_stepper.run();
+  shoulder_stepper.run();
+  base_stepper.run();
+}
+void move_joint_forward(int joint){
+  arm.setOneRelative(joint, 10);
+}
+void move_joint_backward(int joint){
+  arm.setOneRelative(joint, -10);
+}
+void gripper_forward(void) {
+  //arm.setOneRelative(GRIPPER, 10);
+  move_joint_forward(GRIPPER);
+}
+void gripper_backward(void) {
+  //arm.setOneRelative(GRIPPER, -10);
+  move_joint_backward(GRIPPER);
+}
+void wrist_rotate_forward(void){
+  move_joint_forward(WRIST_ROT);
+}
+void wrist_rotate_backward(void){
+  move_joint_backward(WRIST_ROT);
+}
+void wrist_forward(void){
+  move_joint_forward(WRIST);
+}
+void wrist_backward(void){
+  move_joint_backward(WRIST);
+}
+void elbow_forward(void){
+  move_joint_forward(ELBOW);
+}
+void elbow_backward(void){
+  move_joint_backward(ELBOW);
+}
+void shoulder_forward(void){
+  move_joint_forward(SHOULDER);
+}
+void shoulder_backward(void){
+  move_joint_backward(SHOULDER);
+}
+void base_forward(void){
+  move_joint_forward(BASE_ROT);
+}
+void base_backward(void){
+  move_joint_backward(BASE_ROT);
+}
+
+void run_stuff(void) {
+   if (digitalReadFast(13)){
+     digitalWriteFast(13,LOW);
+     //arm.setOneAbsolute(GRIPPER, GRIPPER_OPENED);
+     gripper_stepper.stop();
+     gripper_stepper.runToPosition();
+     gripper_stepper.moveTo(GRIPPER_OPENED);
+     wrist_rotate_stepper.stop();
+     wrist_rotate_stepper.runToPosition(); 
+     wrist_rotate_stepper.moveTo(GRIPPER_OPENED);
+     wrist_stepper.stop();
+     wrist_stepper.runToPosition(); 
+     wrist_stepper.moveTo(GRIPPER_OPENED);
+     elbow_stepper.stop();
+     elbow_stepper.runToPosition(); 
+     elbow_stepper.moveTo(GRIPPER_OPENED);
+     shoulder_stepper.stop();
+     shoulder_stepper.runToPosition(); 
+     shoulder_stepper.moveTo(GRIPPER_CLOSED);
+     base_stepper.stop();
+     base_stepper.runToPosition(); 
+     base_stepper.moveTo(GRIPPER_OPENED);
+   }
+   else {
+     digitalWriteFast(13,HIGH);
+     //arm.setOneAbsolute(GRIPPER, GRIPPER_CLOSED);
+     gripper_stepper.stop();
+     gripper_stepper.runToPosition();
+     gripper_stepper.moveTo(GRIPPER_CLOSED);
+     wrist_rotate_stepper.stop();
+     wrist_rotate_stepper.runToPosition(); 
+     wrist_rotate_stepper.moveTo(GRIPPER_CLOSED);
+     wrist_stepper.stop();
+     wrist_stepper.runToPosition(); 
+     wrist_stepper.moveTo(GRIPPER_CLOSED);
+     elbow_stepper.stop();
+     elbow_stepper.runToPosition(); 
+     elbow_stepper.moveTo(GRIPPER_CLOSED);
+     shoulder_stepper.stop();
+     shoulder_stepper.runToPosition(); 
+     shoulder_stepper.moveTo(GRIPPER_OPENED);
+     base_stepper.stop();
+     base_stepper.runToPosition(); 
+     base_stepper.moveTo(GRIPPER_CLOSED);
+   }
+
 }
 
 /* _is_imu_connected
@@ -189,18 +321,6 @@ float get_mag_z(int device_id){
     return imu[device_id].calcMag(imu[device_id].readMag(Z_AXIS));
   }
   return -89; //return a bogus value so I know where the error is.
-}
-
-void run_stuff(void) {
-   if (digitalReadFast(13)){
-     digitalWriteFast(13,LOW);
-     arm.setOneAbsolute(GRIPPER, GRIPPER_OPENED);
-   }
-   else {
-     digitalWriteFast(13,HIGH);
-     arm.setOneAbsolute(GRIPPER, GRIPPER_CLOSED);
-   }
-
 }
 
 void printGyro(int i)

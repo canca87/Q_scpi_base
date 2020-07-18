@@ -34,7 +34,7 @@ void setup() {
 
 void loop() {
   test_scpi();
-  delay(1000);
+  delay(3000);
 }
 
 void test_scpi(void) {
